@@ -1,3 +1,4 @@
+import { products } from "@wix/stores";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BannerImages from "../components/BannerImages";
@@ -6,69 +7,58 @@ import Searchbar from "../components/Searchbar";
 import LoadingSkeleton from "../components/skeletons/LoadingSkeleton";
 import useFetchProducts from "../hooks/FetchProducts";
 
+export type Product = products.Product;
 // in Index.tsx or a separate types.ts file
-export type Product = {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  sku?: string;
-  price?: {
-    currency: string;
-    price: number;
-    discountedPrice: number;
-    formatted: {
-      price: string;
-      discountedPrice: string;
-    };
-  };
-  convertedPriceData?: {
-    currency: string;
-    price: number;
-    discountedPrice: number;
-    formatted: {
-      price: string;
-      discountedPrice: string;
-    };
-  };
-  stock?: {
-    trackInventory: boolean;
-    inStock: boolean;
-    inventoryStatus?: string;
-  };
-  media?: {
-    mainMedia?: {
-      thumbnail?: {
-        url: string;
-        width: number;
-        height: number;
-      };
-      image?: {
-        url: string;
-        width: number;
-        height: number;
-      };
-    };
-  };
-  ribbon?: string;
-  [key: string]: any; // allow any extra fields
-};
+// export type Product = {
+//   _id: string;
+//   name: string;
+//   slug: string;
+//   description?: string;
+//   sku?: string;
+//   price?: {
+//     currency: string;
+//     price: number;
+//     discountedPrice: number;
+//     formatted: {
+//       price: string;
+//       discountedPrice: string;
+//     };
+//   };
+//   convertedPriceData?: {
+//     currency: string;
+//     price: number;
+//     discountedPrice: number;
+//     formatted: {
+//       price: string;
+//       discountedPrice: string;
+//     };
+//   };
+//   stock?: {
+//     trackInventory: boolean;
+//     inStock: boolean;
+//     inventoryStatus?: string;
+//   };
+//   media?: {
+//     mainMedia?: {
+//       thumbnail?: {
+//         url: string;
+//         width: number;
+//         height: number;
+//       };
+//       image?: {
+//         url: string;
+//         width: number;
+//         height: number;
+//       };
+//     };
+//   };
+//   ribbon?: string;
+//   [key: string]: any; // allow any extra fields
+// };
 
 export default function Index() {
-  // const [items, setItems] = useState<Product[]>([]);
-  // useEffect(() => {
-  //   (async () => {
-  //     const WixClient = wixClient;
-  //     const productList = await WixClient.products?.queryProducts().find();
-  //     const slugProduct = await WixClient.products.getProduct(
-  //       "df8ae122-9a06-4fa2-96bb-4b058db5959f",
-  //     );
-  //     console.log(JSON.stringify(slugProduct, null, 2));
-  //     //@ts-ignore
-  //     setItems(productList?.items);
-  //   })();
-  // }, []);
   const { data: Data, isLoading, error } = useFetchProducts();
+  // console.log(JSON.stringify(Data, null, 2));
 
   if (error) return <Text>{String(error)}</Text>;
 
@@ -77,8 +67,19 @@ export default function Index() {
       <FlatList
         showsVerticalScrollIndicator={false}
         data={Data ?? []}
-        renderItem={({ item }) => <ProductCard {...item} />}
-        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => (
+          <ProductCard
+            _id={item._id}
+            name={item.name}
+            slug={item.slug}
+            description={item.description}
+            price={item.price}
+            stock={item.stock}
+            media={item.media}
+            ribbon={item.ribbon}
+          />
+        )}
+        keyExtractor={(item) => item._id as string}
         numColumns={3}
         columnWrapperStyle={{
           justifyContent: "space-between",
