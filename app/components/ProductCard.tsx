@@ -1,7 +1,18 @@
+import type { products } from "@wix/stores";
 import { Link } from "expo-router";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Product } from "../(tabs)";
+
+interface ProductCardProps {
+  _id?: string;
+  name?: string | null;
+  slug?: string;
+  description?: string | null;
+  price?: products.PriceData;
+  stock?: products.Stock;
+  media?: products.Media;
+  ribbon?: string | null;
+}
 
 const ProductCard = ({
   _id,
@@ -12,13 +23,16 @@ const ProductCard = ({
   stock,
   media,
   ribbon,
-}: Product) => {
-  //   console.log(slug, _id);
+}: ProductCardProps) => {
   return (
     <Link
       href={{
         pathname: "/products/[id]",
-        params: { id: _id, image: media?.mainMedia?.image?.url },
+        params: {
+          id: _id ?? "",
+          image: media?.mainMedia?.image?.url,
+          slug: slug ?? "",
+        },
       }}
       asChild
       style={styles.cardContainer}
@@ -39,21 +53,23 @@ const ProductCard = ({
         </Text>
         <View style={styles.priceData}>
           <Text style={{ color: "green" }}>
-            {price?.formatted.discountedPrice?.split(".")[0] ||
-              price?.formatted.price.split(".")[0]}
+            {price?.formatted?.discountedPrice?.split(".")[0] ||
+              price?.formatted?.price?.split(".")[0]}
           </Text>
-          {price?.price! < price?.discountedPrice! && (
-            <Text
-              style={{
-                textDecorationLine: "line-through",
-                fontSize: 11,
-                color: "gray",
-              }}
-            >
-              {price?.formatted.discountedPrice?.split(".")[0] ||
-                price?.formatted.price.split(".")[0]}
-            </Text>
-          )}
+          {price?.price != null &&
+            price?.discountedPrice != null &&
+            price.price < price.discountedPrice && (
+              <Text
+                style={{
+                  textDecorationLine: "line-through",
+                  fontSize: 11,
+                  color: "gray",
+                }}
+              >
+                {price?.formatted?.discountedPrice?.split(".")[0] ||
+                  price?.formatted?.price?.split(".")[0]}
+              </Text>
+            )}
         </View>
         <View style={styles.overLay}>
           {ribbon?.length ? (
