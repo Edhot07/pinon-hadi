@@ -140,4 +140,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProductCard;
+export default React.memo(ProductCard);

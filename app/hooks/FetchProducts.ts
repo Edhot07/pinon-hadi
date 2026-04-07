@@ -24,6 +24,7 @@ export const useFetchProductById = (id: string) => {
   return useQuery({
     queryKey: ["slugProduct", id],
     queryFn: async () => {
+      // const productList = await wixClient.products.getProduct(id);
       const productList = await wixClient.products.getProduct(id);
       return productList.product as Product;
     },

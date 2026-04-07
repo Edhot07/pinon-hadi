@@ -9,4 +9,3 @@ export const wixClient = createClient({
   auth: OAuthStrategy({ clientId: ClientID }),
 });
 export type WixClientProps = (typeof wixClient.products)[];
-// console.log(JSON.stringify(wixClient, null, 2));
