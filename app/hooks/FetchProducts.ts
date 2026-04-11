@@ -8,7 +8,7 @@ const useFetchProducts = () => {
     queryKey: ["wixproducts"],
     queryFn: async () => {
       const productLists = await wixClient.products?.queryProducts().find();
-      return productLists.items as Product[];
+      return productLists.items;
     },
   });
 };
@@ -22,11 +22,38 @@ export const useFetchProductById = (id: string) => {
     ?.find((p) => p._id === id);
 
   return useQuery({
-    queryKey: ["slugProduct", id],
+    queryKey: ["id", id],
     queryFn: async () => {
       // const productList = await wixClient.products.getProduct(id);
       const productList = await wixClient.products.getProduct(id);
-      return productList.product as Product;
+      return productList.product;
+    },
+    initialData: cachedProduct,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+//Fetch by slug
+export const useFetchProductBySlug = (slug: string) => {
+  const queryClient = useQueryClient();
+
+  const cachedProduct = queryClient
+    .getQueryData<Product[]>(["wixproducts"])
+    ?.find((p) => p.slug === slug);
+
+  return useQuery({
+    queryKey: ["slug", slug],
+    queryFn: async () => {
+      const { items } = await wixClient.products
+        .queryProducts()
+        .eq("slug", slug)
+        .limit(1)
+        .find();
+      const product = items[0];
+      if (!product || !product.visible) {
+        return;
+      }
+      return product;
     },
     initialData: cachedProduct,
     staleTime: 1000 * 60 * 5,

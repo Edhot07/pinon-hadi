@@ -18,7 +18,6 @@ const ProductCard = ({
   _id,
   name,
   slug,
-  description,
   price,
   stock,
   media,
@@ -58,16 +57,15 @@ const ProductCard = ({
           </Text>
           {price?.price != null &&
             price?.discountedPrice != null &&
-            price.price < price.discountedPrice && (
+            price.price != price.discountedPrice && (
               <Text
                 style={{
                   textDecorationLine: "line-through",
-                  fontSize: 11,
-                  color: "gray",
+                  fontSize: 12,
+                  color: "rgba(204, 62, 62, 0.8)",
                 }}
               >
-                {price?.formatted?.discountedPrice?.split(".")[0] ||
-                  price?.formatted?.price?.split(".")[0]}
+                {price?.formatted?.price?.split(".")[0]}
               </Text>
             )}
         </View>
@@ -103,8 +101,8 @@ const styles = StyleSheet.create({
   },
   overLay: {
     position: "absolute",
-    top: -5,
-    left: "-2%",
+    top: 1,
+    left: "2%",
     backgroundColor: "red",
     borderRadius: 2,
   },

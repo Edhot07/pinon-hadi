@@ -14,6 +14,7 @@ export default function Index() {
   if (error) return <Text>{String(error)}</Text>;
 
   return (
+    
     <SafeAreaView style={styles.container}>
       <FlatList
         showsVerticalScrollIndicator={false}
