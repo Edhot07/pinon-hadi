@@ -4,7 +4,7 @@ export default function _layout() {
   return (
     <Stack>
       <Stack.Screen
-        name="[id]"
+        name="[slug]"
         options={{
           title: "Product Details",
         }}

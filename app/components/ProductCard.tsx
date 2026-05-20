@@ -1,7 +1,8 @@
 import type { products } from "@wix/stores";
+import { Image } from "expo-image";
 import { Link } from "expo-router";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface ProductCardProps {
   _id?: string;
@@ -26,7 +27,7 @@ const ProductCard = ({
   return (
     <Link
       href={{
-        pathname: "/products/[id]",
+        pathname: "/products/[slug]",
         params: {
           id: _id ?? "",
           image: media?.mainMedia?.image?.url,
@@ -38,9 +39,13 @@ const ProductCard = ({
     >
       <TouchableOpacity style={styles.touchAbleCard}>
         <Image
-          source={{ uri: media?.mainMedia?.image?.url }}
-          resizeMode="cover"
-          style={{ height: 150, width: "100%", borderRadius: 10 }}
+          source={media?.mainMedia?.image?.url}
+          contentFit="cover"
+          priority="high"
+          cachePolicy="memory-disk" // ← caches on disk, survives app restart
+          placeholder={{ blurhash: "L6PZfSi_.AyE_3t7t7R**0o#DgR4" }}
+          style={{ height: 200, width: "100%", borderRadius: 10 }}
+          transition={200} // ← smooth fade in
         />
         <Text
           numberOfLines={1}
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f3f5",
   },
   touchAbleCard: {
-    width: "30%",
+    width: "45%",
     position: "relative",
     backgroundColor: "#eceff1",
   },
@@ -138,4 +143,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(ProductCard);
+export default ProductCard;

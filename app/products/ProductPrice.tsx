@@ -10,6 +10,9 @@ interface ProductPriceProps {
 }
 
 const ProductPrice = ({ product, selectedVariant }: ProductPriceProps) => {
+  const availableQuantity =
+    selectedVariant?.stock?.quantity ?? product?.stock?.quantity;
+
   const priceData = selectedVariant?.variant?.priceData ?? product?.priceData;
   if (!priceData) return null;
 
@@ -28,6 +31,17 @@ const ProductPrice = ({ product, selectedVariant }: ProductPriceProps) => {
 
   return (
     <View style={styles.container}>
+      {/* Available quantities */}
+      {availableQuantity && availableQuantity < 5 ? (
+        <Text variant="labelLarge" style={{ color: "#910303aa" }}>
+          only {availableQuantity} left
+        </Text>
+      ) : availableQuantity === 0 ? (
+        <Text variant="labelLarge" style={{ color: "#910303aa" }}>
+          currently out of stock
+        </Text>
+      ) : null}
+
       <View style={styles.priceRow}>
         {/* Main price */}
         <Text
@@ -76,10 +90,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   normalPrice: {
-    fontWeight: "500",
+    fontWeight: "bold",
   },
   discountedPrice: {
-    fontWeight: "500",
+    fontWeight: "bold",
     color: "#3B6D11",
   },
   originalPrice: {
@@ -101,5 +115,4 @@ const styles = StyleSheet.create({
     color: "#3B6D11",
   },
 });
-
 export default ProductPrice;

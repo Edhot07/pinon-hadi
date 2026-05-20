@@ -1,22 +1,33 @@
 import { checkInStock } from "@/lib/utils";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Product } from "../(tabs)";
+import BackInStockModal from "../components/BackInStockModal";
+import { useAddItemToCart } from "../hooks/FetchProducts";
 interface AddToCartButtonsProps {
   product: Product | undefined;
   selectedOptions: Record<string, string>;
 }
+
 const AddToCartButtons = ({
   product,
   selectedOptions,
 }: AddToCartButtonsProps) => {
+  const [notifyModalVisible, setNotifyModalVisible] = useState(false);
   const insets = useSafeAreaInsets();
+  const mutation = useAddItemToCart();
 
-  const handleAddToCart = () => console.log("Add to cart");
+  const quantity = 1;
   const handleBuyNow = () => console.log("Buy now");
-  const checkStock = checkInStock(product, selectedOptions);
+  const inStock = checkInStock(product, selectedOptions);
 
   return (
     <View
@@ -25,11 +36,26 @@ const AddToCartButtons = ({
         { paddingBottom: insets.bottom + 12 }, // ← adapts to each device
       ]}
     >
-      {checkStock ? (
+      {inStock ? (
         <>
-          <TouchableOpacity style={styles.cartButton} onPress={handleAddToCart}>
-            <Ionicons name="cart-outline" size={18} color="#000" />
-            <Text style={styles.cartButtonText}>Add to cart</Text>
+          <TouchableOpacity
+            style={[styles.cartButton, mutation.isPending && { opacity: 0.7 }]}
+            onPress={() =>
+              mutation.mutate({ product, selectedOptions, quantity })
+            }
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <>
+                <ActivityIndicator size="small" color="#000" />
+                <Text style={styles.cartButtonText}>Adding...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="cart-outline" size={18} color="#000" />
+                <Text style={styles.cartButtonText}>Add to cart</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.buyButton} onPress={handleBuyNow}>
@@ -37,10 +63,19 @@ const AddToCartButtons = ({
           </TouchableOpacity>
         </>
       ) : (
-        <TouchableOpacity style={styles.buyButton} onPress={handleBuyNow}>
+        <TouchableOpacity
+          style={styles.buyButton}
+          onPress={() => setNotifyModalVisible(!notifyModalVisible)}
+        >
           <Text style={styles.buyButtonText}>Notify me</Text>
         </TouchableOpacity>
       )}
+      <BackInStockModal
+        visible={notifyModalVisible}
+        onDismiss={() => setNotifyModalVisible(!notifyModalVisible)}
+        product={product}
+        selectedOptions={selectedOptions}
+      />
     </View>
   );
 };

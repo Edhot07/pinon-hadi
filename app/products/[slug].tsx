@@ -1,13 +1,14 @@
 import { checkInStock, findVariant } from "@/lib/utils";
 import { products } from "@wix/stores";
 import { ResizeMode, Video } from "expo-av";
+import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   FlatList,
-  Image,
   ScrollView,
   StyleSheet,
+  Text,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -29,9 +30,8 @@ const ProductDetails = () => {
   const { data: product, isLoading } = useFetchProductBySlug(slug);
 
   const [selectedId, setSelectedId] = useState<string | null>(
-    product?.media?.items?.[2]?._id || id || null,
+    product?.media?.items?.[0]?._id || null,
   );
-
   const [selectedOptions, setSelectedOptions] = useState<
     Record<string, string>
   >(
@@ -42,11 +42,16 @@ const ProductDetails = () => {
       ?.reduce((acc, curr) => ({ ...acc, ...curr }), {}) || {},
   );
 
-  // Variables
+  // Variables state
   const selectedVariant = findVariant(product, selectedOptions);
   const checkStock = checkInStock(product, selectedOptions);
 
-  // console.log(JSON.stringify(product?.variants?.[0], null, 2));
+  const selectedOptionsMedia = product?.productOptions?.flatMap((option) => {
+    const selectedChoice = option.choices?.find(
+      (choice) => choice.description === selectedOptions[option.name || ""],
+    );
+    return selectedChoice?.media?.items ?? [];
+  });
   const [imageIndex, setImageIndex] = useState(0);
 
   const isManualScroll = useRef(false);
@@ -70,10 +75,13 @@ const ProductDetails = () => {
   });
 
   const handleonPress = (item: products.MediaItem) => {
-    const index = product?.media?.items?.findIndex(
-      (i) => i._id === item._id,
-    ) as number;
+    const currentData = selectedOptionsMedia?.length
+      ? selectedOptionsMedia
+      : (product?.media?.items ?? []);
+    const index = currentData?.findIndex((i) => i._id === item._id) as number;
 
+    if (index < 0) return;
+    if (index >= currentData?.length) return null;
     isManualScroll.current = true;
 
     flatListRef.current?.scrollToIndex({ index, animated: true });
@@ -90,6 +98,9 @@ const ProductDetails = () => {
     setImageIndex(newIndex);
   };
 
+  const bars = selectedOptionsMedia?.length
+    ? selectedOptionsMedia
+    : product?.media?.items;
   return (
     <View style={styles.container}>
       <ScrollView
@@ -100,7 +111,20 @@ const ProductDetails = () => {
         <FlatList
           ref={flatListRef}
           keyExtractor={(item) => item._id}
-          data={product?.media?.items}
+          data={
+            selectedOptionsMedia?.length
+              ? selectedOptionsMedia
+              : product?.media?.items
+          }
+          onScrollToIndexFailed={(info) => {
+            // ← fallback: wait for list to render then retry
+            setTimeout(() => {
+              flatListRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+              });
+            }, 500);
+          }}
           renderItem={({ item }) => <MediaPreview item={item} />}
           onMomentumScrollEnd={onImageScroll}
           horizontal={true}
@@ -109,47 +133,47 @@ const ProductDetails = () => {
           showsVerticalScrollIndicator={false}
           onViewableItemsChanged={onViewRef.current}
           viewabilityConfig={viewabilityConfig}
-          ListEmptyComponent={
-            isLoading ? (
-              <Image
-                source={{ uri: image || undefined }}
-                resizeMode="cover"
-                style={{
-                  height: 300,
-                  width: width,
-                }}
-              />
-            ) : null
-          }
+          // ListEmptyComponent={
+          //   isLoading ? (
+          //     <Image
+          //       source={image}
+          //       contentFit="cover"
+          //       priority="high"
+          //       cachePolicy="memory-disk"
+          //       style={{ height: 300, width }}
+          //       transition={200}
+          //     />
+          //   ) : null
+          // }
         />
 
         {/* The selected media bars */}
-        <View
+        {/* <View
           style={{
             flexDirection: "row",
             justifyContent: "center",
             width: "100%",
           }}
         >
-          {width / (product?.media?.items?.length || 1) > 0 &&
-            product?.media?.items?.map((_, index) => (
+          {width / (bars?.length || 1) > 0 &&
+            bars?.map((_, index) => (
               <View
                 key={index}
                 style={[
                   index === imageIndex
                     ? {
-                        width: width / (product?.media?.items?.length || 1),
+                        width: width / (bars?.length || 1),
                         height: 4,
                         backgroundColor: "black",
                       }
                     : {
-                        width: width / (product?.media?.items?.length || 1),
+                        width: width / (bars?.length || 1),
                         backgroundColor: "#ccc",
                       },
                 ]}
-              ></View>
+              />
             ))}
-        </View>
+        </View> */}
 
         <View
           style={{
@@ -164,6 +188,11 @@ const ProductDetails = () => {
             product={product}
             handleonPress={handleonPress}
             selectedId={selectedId}
+            mediaItems={
+              selectedOptionsMedia?.length
+                ? selectedOptionsMedia
+                : product?.media?.items
+            }
           />
           {/* Product Selector */}
           <ProductOptionSelector
@@ -181,7 +210,13 @@ const ProductDetails = () => {
             selectedOptions={selectedOptions}
           />
         </View>
+        <Text>{JSON.stringify(selectedOptionsMedia, null, 2)}</Text>
+        <Text>{JSON.stringify(selectedOptions, null, 2)}</Text>
         <View style={{ height: 90 }} />
+        {/* <Text>{JSON.stringify(selectedOptions, null, 2)}</Text> */}
+        {/* <Text>
+          {JSON.stringify(product?.productOptions?.[0].choices, null, 2)}
+        </Text> */}
       </ScrollView>
       <AddToCartButtons product={product} selectedOptions={selectedOptions} />
     </View>
@@ -199,12 +234,12 @@ function MediaPreview({ item }: MediaPreviewProps) {
     return (
       <>
         <Image
-          source={{ uri: item.image?.url || undefined }}
-          resizeMode="cover"
-          style={{
-            height: 300,
-            width: width,
-          }}
+          source={item.image?.url}
+          contentFit="cover"
+          priority="high"
+          cachePolicy="memory-disk"
+          style={{ height: 300, width }}
+          transition={200}
         />
       </>
     );

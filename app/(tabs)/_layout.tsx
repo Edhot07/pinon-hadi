@@ -1,7 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { useCart } from "../hooks/FetchProducts";
 
 export default function TabsLayout() {
+  const { data, isLoading } = useCart();
+
+  const numberOfItems = data?.lineItems?.length || 0;
+  const totalQuantity =
+    data?.lineItems?.reduce((acc, item) => acc + (item.quantity || 0), 0) || 0;
   return (
     <Tabs
       screenOptions={{
@@ -67,6 +73,9 @@ export default function TabsLayout() {
               size={size}
             />
           ),
+          // tabBarBadge: totalQuantity > 9 ? "9+" : totalQuantity || undefined,
+          tabBarBadge: numberOfItems > 9 ? "9+" : numberOfItems || undefined,
+          // tabBarBadge: totalQuantity,
         }}
       />
     </Tabs>

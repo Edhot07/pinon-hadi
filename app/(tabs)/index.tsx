@@ -1,6 +1,6 @@
 import { products } from "@wix/stores";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { FlatList, StatusBar, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BannerImages from "../components/BannerImages";
 import ProductCard from "../components/ProductCard";
 import Searchbar from "../components/Searchbar";
@@ -10,22 +10,25 @@ import useFetchProducts from "../hooks/FetchProducts";
 export type Product = products.Product;
 export default function Index() {
   const { data: products, isLoading, error } = useFetchProducts();
+  const insets = useSafeAreaInsets();
+  console.log(process.env.EXPO_PUBLIC_BASE_URL);
 
   if (error) return <Text>{String(error)}</Text>;
 
   return (
-    
-    <SafeAreaView style={styles.container}>
+    <View style={{ paddingTop: insets.top + 10, flex: 1, paddingBottom: 1 }}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
       <FlatList
         showsVerticalScrollIndicator={false}
         data={products ?? []}
         renderItem={({ item }) => <ProductCard {...item} />}
         keyExtractor={(item) => item._id as string}
-        numColumns={3}
+        numColumns={2}
         columnWrapperStyle={{
-          justifyContent: "space-between",
+          justifyContent: "space-evenly",
           marginTop: 10,
           paddingHorizontal: 5,
+          gap: 10,
         }}
         ListHeaderComponent={
           <>
@@ -45,7 +48,7 @@ export default function Index() {
           )
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -53,7 +56,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: "column",
     gap: 10,
-    marginBottom: 5,
-    paddingBottom: 5,
+    marginBottom: 1,
+    paddingBottom: 2,
   },
 });

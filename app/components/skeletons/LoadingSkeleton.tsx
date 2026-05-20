@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 const LoadingSkeleton = () => {
   return (
     <View style={styles.loadingContainer}>
-      {[...Array(9)].map((_, index) => (
+      {[...Array(8)].map((_, index) => (
         <View key={index} style={styles.skeletonCard}>
           <View style={styles.skeletonMedia} />
           <View style={styles.skeletonLine} />
@@ -20,18 +20,18 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexWrap: "wrap",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "space-evenly",
     paddingHorizontal: 5,
   },
   skeletonCard: {
-    width: "30%",
+    width: "45%",
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 5,
     marginBottom: 10,
   },
   skeletonMedia: {
-    height: 120,
+    height: 200,
     backgroundColor: "#e1e5ee",
     borderRadius: 12,
     marginBottom: 8,

@@ -7,6 +7,8 @@ const BannerImages = () => {
   const bannerHeight = SCREEN_HEIGHT * 0.25; // 25% of screen height
   const borderRadius = SCREEN_WIDTH * 0.05; // 5% of screen width
 
+  // const bannerProducts = useFetchCollectionBySlug("feature-products");
+
   return (
     <View style={styles.bannerContainer}>
       <View
