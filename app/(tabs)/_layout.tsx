@@ -29,22 +29,20 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? "home" : "home-outline"}
               color={color}
-              size={size}
+              size={focused ? 30 : 24}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="about"
+        name="collections"
         options={{
-          title: "About",
+          title: "Collections",
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
-              name={
-                focused ? "information-circle" : "information-circle-outline"
-              }
+              name={focused ? "bag-handle" : "bag-handle-outline"}
               color={color}
-              size={size}
+              size={focused ? 30 : 24}
             />
           ),
         }}
@@ -57,7 +55,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? "person-circle" : "person-circle-outline"}
               color={color}
-              size={size}
+              size={focused ? 30 : 24}
             />
           ),
         }}
@@ -70,7 +68,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? "cart" : "cart-outline"}
               color={color}
-              size={size}
+              size={focused ? 30 : 24}
             />
           ),
           // tabBarBadge: totalQuantity > 9 ? "9+" : totalQuantity || undefined,

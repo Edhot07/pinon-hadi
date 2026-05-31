@@ -1,6 +1,6 @@
 import toastMessage from "@/lib/toastMessages";
 import { wixClient } from "@/lib/wix-client.base";
-import { isLoggedIn, saveWixTokens } from "@/lib/wixAuth";
+import { saveWixTokens } from "@/lib/wixAuth";
 import {
   MutationKey,
   QueryKey,
@@ -22,14 +22,9 @@ import getCart, {
   updateCartItemQuantity,
   UpdateCartItemQuantityValues,
 } from "../wix-api/cart";
-import updateMember, {
-  getLoggedInMember,
-  UpdateMemberValues,
-  uploadMemberPhoto,
-} from "../wix-api/members";
 
 const queryKey: QueryKey = ["cart"];
-const getMemberQueryKey = ["loggedInMember"];
+
 // Fetch all products
 const useFetchProducts = () => {
   return useQuery({
@@ -241,67 +236,6 @@ export const useCreateBackInStockNotificationRequest = () => {
           "An error occurred while creating the back in stock notification request. Please try again later.",
         );
       }
-    },
-  });
-};
-
-export const useMember = () => {
-  return useQuery({
-    queryKey: getMemberQueryKey,
-    queryFn: getLoggedInMember,
-    enabled: isLoggedIn(),
-    staleTime: 1000 * 60 * 5, // ← cache for 5 minutes
-  });
-};
-
-interface UseUpdateMemberArgs {
-  memberId: string;
-  values: UpdateMemberValues;
-  localPhotoUri: string | null;
-}
-export const useUpdateMember = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({
-      memberId,
-      values,
-      localPhotoUri,
-    }: UseUpdateMemberArgs) => {
-      let photoUrl = values.photoUrl;
-      console.log(photoUrl);
-      console.log(localPhotoUri);
-
-      // ← If user picked a new photo, upload it first
-      if (localPhotoUri) {
-        try {
-          console.log("Starting photo upload...");
-          photoUrl = await uploadMemberPhoto(localPhotoUri);
-          console.log("Photo upload success:", photoUrl);
-        } catch (uploadError) {
-          console.log("PHOTO UPLOAD FAILED:", uploadError); // ← is 403 here?
-          throw uploadError;
-        }
-      }
-      try {
-        console.log("Starting member update...");
-        const result = await updateMember(memberId, { ...values, photoUrl });
-        console.log("Member update success");
-        return result;
-      } catch (updateError) {
-        console.log("MEMBER UPDATE FAILED:", updateError); // ← or here?
-        throw updateError;
-      }
-    },
-
-    onSuccess: (updatedMember) => {
-      // ← Update cache instantly without refetch
-      queryClient.setQueryData(getMemberQueryKey, updatedMember);
-      console.log("Profile updated ✅");
-    },
-
-    onError: (error) => {
-      console.log("Update failed:", error);
     },
   });
 };

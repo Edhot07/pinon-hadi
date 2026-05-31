@@ -1,4 +1,6 @@
 import {
+  addressSchema,
+  AddressValues,
   ProfileFormValues,
   profileSchema,
 } from "@/lib/validations/profileSchema";
@@ -6,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
@@ -21,7 +23,8 @@ import {
 } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMember, useUpdateMember } from "../hooks/FetchProducts";
+import { AddressForm } from "../components/AddressForm";
+import { useMember, useUpdateMember } from "../hooks/profile_section";
 
 const EditProfile = () => {
   const { data: member, isLoading } = useMember();
@@ -32,6 +35,64 @@ const EditProfile = () => {
 
   const [localPhotoUri, setLocalPhotoUri] = useState<string | null>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  //Addresses
+  const [addresses, setAddresses] = useState<AddressValues[]>([]);
+  const [addressErrors, setAddressErrors] = useState<
+    Partial<Record<keyof AddressValues, string>>[]
+  >([]);
+
+  useEffect(() => {
+    if (member?.contact?.addresses) {
+      setAddresses(
+        member.contact.addresses.map((a) => ({
+          addressLine: a.addressLine ?? "",
+          addressLine2: a.addressLine2 ?? "",
+          city: a.city ?? "",
+          subdivision: a.subdivision ?? "",
+          country: a.country ?? "",
+          postalCode: a.postalCode ?? "",
+        })),
+      );
+    }
+  }, [member]);
+
+  const handleAddressChange = (
+    index: number,
+    field: keyof AddressValues,
+    value: string,
+  ) => {
+    const updated = [...addresses];
+    updated[index] = { ...updated[index], [field]: value };
+    setAddresses(updated);
+    // ← Clear error for this field
+    const updatedErrors = [...addressErrors];
+    if (updatedErrors[index]) {
+      updatedErrors[index] = { ...updatedErrors[index], [field]: undefined };
+      setAddressErrors(updatedErrors);
+    }
+  };
+
+  const handleAddAddress = () => {
+    setAddresses([
+      ...addresses,
+      {
+        addressLine: "",
+        addressLine2: "",
+        city: "",
+        subdivision: "",
+        country: "",
+        postalCode: "",
+      },
+    ]);
+  };
+
+  const handleRemoveAddress = (index: number) => {
+    setAddresses(addresses.filter((_, i) => i !== index));
+    setAddressErrors(addressErrors.filter((_, i) => i !== index));
+  };
+
+  //
 
   const {
     control,
@@ -48,6 +109,23 @@ const EditProfile = () => {
     },
   });
 
+  // ← Single source of truth for save button
+  // const canSave = isDirty || !!localPhotoUri; // ← only allow save when there are changes and not already saving
+  const canSave =
+    isDirty ||
+    !!localPhotoUri ||
+    JSON.stringify(addresses) !==
+      JSON.stringify(
+        member?.contact?.addresses?.map((a) => ({
+          addressLine: a.addressLine ?? "",
+          addressLine2: a.addressLine2 ?? "",
+          city: a.city ?? "",
+          subdivision: a.subdivision ?? "",
+          country: a.country ?? "",
+          postalCode: a.postalCode ?? "",
+        })) ?? [],
+      );
+
   // ─── Avatar ───────────────────────────────────────────────
   const handlePickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,7 +139,6 @@ const EditProfile = () => {
       aspect: [1, 1],
       quality: 0.8,
     });
-    console.log(result);
     if (!result.canceled && result.assets[0]) {
       const uri = result.assets[0].uri;
       setAvatarUri(uri); // ← show preview immediately
@@ -72,8 +149,38 @@ const EditProfile = () => {
   // ─── Submit ───────────────────────────────────────────────
   const onSubmit = (values: ProfileFormValues) => {
     if (!member?._id) return;
+
+    // ← Validate addresses
+    const addressValidationErrors: Partial<
+      Record<keyof AddressValues, string>
+    >[] = [];
+    let hasAddressErrors = false;
+
+    addresses.forEach((addr, i) => {
+      const result = addressSchema.safeParse(addr);
+      if (!result.success) {
+        hasAddressErrors = true;
+        const fieldErrors: Partial<Record<keyof AddressValues, string>> = {};
+        result.error.issues.forEach((e) => {
+          if (e.path[0])
+            fieldErrors[e.path[0] as keyof AddressValues] = e.message;
+        });
+        addressValidationErrors[i] = fieldErrors;
+      }
+    });
+
+    if (hasAddressErrors) {
+      setAddressErrors(addressValidationErrors);
+      return;
+    }
+
     update(
-      { memberId: member._id, values, localPhotoUri },
+      {
+        memberId: member._id,
+        values: { ...values, addresses },
+        localPhotoUri,
+        currentPhotoUrl: member?.profile?.photo?.url,
+      },
       {
         onSuccess: () => {
           setLocalPhotoUri(null);
@@ -87,7 +194,7 @@ const EditProfile = () => {
 
   // ─── Back ─────────────────────────────────────────────────
   const handleBack = () => {
-    if (isDirty) {
+    if (isDirty || localPhotoUri) {
       Alert.alert(
         "Discard changes?",
         "You have unsaved changes. Are you sure?",
@@ -96,7 +203,11 @@ const EditProfile = () => {
           {
             text: "Discard",
             style: "destructive",
-            onPress: () => router.back(),
+            onPress: () => {
+              setLocalPhotoUri(null);
+              setAvatarUri(member?.profile?.photo?.url ?? null); // ← reset to original photo
+              router.back();
+            },
           },
         ],
       );
@@ -126,8 +237,8 @@ const EditProfile = () => {
         </Text>
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
-          disabled={isPending || !isDirty}
-          style={[styles.saveBtn, (!isDirty || isPending) && { opacity: 0.4 }]}
+          disabled={isPending || !canSave}
+          style={[styles.saveBtn, (!canSave || isPending) && { opacity: 0.4 }]}
         >
           {isPending ? (
             <ActivityIndicator size="small" color="#27500A" />
@@ -243,6 +354,41 @@ const EditProfile = () => {
             />
           </View>
 
+          {/* Addresses Section */}
+          <SectionLabel title="Addresses" />
+          <View style={{ paddingHorizontal: 16, gap: 12 }}>
+            {addresses.length === 0 && (
+              <View style={styles.emptyAddress}>
+                <Ionicons name="location-outline" size={20} color="#aaa" />
+                <Text style={styles.emptyAddressText}>
+                  No addresses added yet
+                </Text>
+              </View>
+            )}
+
+            {addresses.map((address, index) => (
+              <AddressForm
+                key={index}
+                index={index}
+                address={address}
+                onChange={handleAddressChange}
+                onRemove={handleRemoveAddress}
+                errors={addressErrors[index]}
+              />
+            ))}
+
+            {/* Add Address Button */}
+            <TouchableOpacity
+              style={styles.addAddressBtn}
+              onPress={handleAddAddress}
+            >
+              <View style={styles.addAddressIcon}>
+                <Ionicons name="add" size={20} color="#185FA5" />
+              </View>
+              <Text style={styles.addAddressBtnText}>Add address</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Account readonly */}
           <SectionLabel title="Account" />
           <View style={styles.section}>
@@ -260,10 +406,10 @@ const EditProfile = () => {
             <TouchableOpacity
               style={[
                 styles.footerSaveBtn,
-                (!isDirty || isPending) && { opacity: 0.4 },
+                (isPending || !canSave) && { opacity: 0.4 },
               ]}
               onPress={handleSubmit(onSubmit)}
-              disabled={isPending || !isDirty}
+              disabled={isPending || !canSave}
             >
               {isPending ? (
                 <ActivityIndicator size="small" color="#fff" />
@@ -462,6 +608,45 @@ const styles = StyleSheet.create({
   },
   footerSaveBtnText: { color: "#fff", fontSize: 15, fontWeight: "500" },
   footerHint: { fontSize: 11, color: "#bbb", textAlign: "center" },
+
+  emptyAddress: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: "#e0e0e0",
+  },
+  emptyAddressText: {
+    fontSize: 14,
+    color: "#aaa",
+  },
+  addAddressBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    borderWidth: 0.5,
+    borderColor: "#e0e0e0",
+    borderStyle: "dashed",
+  },
+  addAddressIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E6F1FB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addAddressBtnText: {
+    fontSize: 14,
+    color: "#185FA5",
+    fontWeight: "500",
+  },
 });
 
 export default EditProfile;

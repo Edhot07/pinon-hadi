@@ -1,4 +1,5 @@
 import { WEB_BASE_URL } from "@/lib/constants";
+import { AddressValues } from "@/lib/validations/profileSchema";
 import { wixClient } from "@/lib/wix-client.base";
 import { members } from "@wix/members";
 import { cache } from "react";
@@ -21,6 +22,7 @@ export interface UpdateMemberValues {
   lastName?: string;
   phone?: string;
   photoUrl?: string; // ← Wix media URL after upload
+  addresses?: AddressValues[];
 }
 
 export default async function updateMember(
@@ -39,27 +41,43 @@ export default async function updateMember(
       lastName: values.lastName,
 
       phones: values.phone ? [values.phone] : [],
+      addresses:
+        values.addresses?.map((addr) => ({
+          addressLine: addr.addressLine,
+          addressLine2: addr.addressLine2,
+          city: addr.city,
+          subdivision: addr.subdivision,
+          country: addr.country,
+          postalCode: addr.postalCode,
+        })) ?? [],
     },
   });
   return updatedMember;
 }
 
-export async function uploadMemberPhoto(localUri: string): Promise<string> {
+export async function uploadMemberPhoto(
+  localUri: string,
+  memberId: string,
+  oldPhotoUrl?: string | null, // ← add this
+): Promise<string> {
   // Step 1 — Get file info from local URI
   const filename = localUri.split("/").pop() ?? "profile.jpg";
   const mimeType = filename.toLowerCase().endsWith(".png")
     ? "image/png"
     : "image/jpeg";
 
-  console.log("Step 1 - filename:", filename, "mimeType:", mimeType);
-  console.log("Uploading photo via Vercel...", filename);
-
   const formData = new FormData();
   formData.append("file", {
     uri: localUri,
-    name: filename,
+    name: "profile.jpg", // ← always profile.jpg
     type: mimeType,
   } as any);
+  formData.append("memberId", memberId);
+
+  // ← Pass old photo URL for deletion
+  if (oldPhotoUrl) {
+    formData.append("oldPhotoUrl", oldPhotoUrl);
+  }
 
   const response = await fetch(`${WEB_BASE_URL}/api/upload-photo`, {
     method: "POST",
@@ -75,7 +93,10 @@ export async function uploadMemberPhoto(localUri: string): Promise<string> {
   }
 
   const { url } = await response.json();
-  console.log("Photo uploaded successfully:", url);
+  console.log(
+    "Photo uploaded successfully(lets see the url from the server): ",
+    url,
+  );
   return url;
 }
 

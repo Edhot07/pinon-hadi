@@ -1,3 +1,4 @@
+import { WEB_BASE_URL } from "@/lib/constants";
 import { wixClient } from "@/lib/wix-client.base";
 import { OauthData } from "@wix/sdk";
 import * as Linking from "expo-linking";
@@ -23,7 +24,7 @@ export async function getLoginUrl(oAuthData: OauthData | undefined) {
 
 export async function getLogoutUrl() {
   const { logoutUrl } = await wixClient.auth.logout(
-    "https://app-bridge-rolk2eowz-edhot07s-projects.vercel.app/logout-callback",
+    `${WEB_BASE_URL}/logout-callback`,
   );
   return logoutUrl;
 }

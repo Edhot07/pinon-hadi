@@ -8,7 +8,7 @@ import { ActivityIndicator, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthContext } from "../context/AuthContext";
 import useAuth from "../hooks/auth";
-import { useMember } from "../hooks/FetchProducts";
+import { useMember } from "../hooks/profile_section";
 import useLogout from "../hooks/useLogout";
 
 const Profile = () => {
